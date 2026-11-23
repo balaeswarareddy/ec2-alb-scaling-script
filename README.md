@@ -1,114 +1,152 @@
-# EC2 and ALB Auto Scaling Infrastructure
+AWS EC2 Auto Scaling with Application Load Balancer using Terraform
 
-This Terraform project provisions a highly available Apache web application on AWS. It creates a custom VPC with public and private subnets across two Availability Zones, an Internet-facing Application Load Balancer (ALB), and an EC2 Auto Scaling Group.
+Project Overview
 
-## Architecture
+This project demonstrates the deployment of AWS infrastructure using Terraform, including a custom VPC, public and private subnets, Application Load Balancer (ALB), EC2 Auto Scaling Group, NAT Gateway, and Apache Web Server.
 
-- Custom VPC with `10.0.0.0/16` CIDR
-- Public subnets for the ALB and NAT Gateway
-- Private subnets for EC2 instances
-- Internet Gateway for public internet access
-- NAT Gateway for outbound access from private subnets
-- Application Load Balancer listening on HTTP port 80
-- Target group and listener forwarding traffic to EC2 instances
-- Launch template running Apache through EC2 user data
-- Auto Scaling Group with a desired/minimum capacity of 2 and a maximum of 3
-- Security groups separating internet-to-ALB and ALB-to-EC2 traffic
+The objective is to automate infrastructure provisioning and demonstrate load balancing, application availability, and scalable cloud architecture.
 
-## Resources Created
+Architecture
 
-| Resource | Purpose |
-|---|---|
-| VPC | Isolated network for the infrastructure |
-| Public/private subnets | Separate internet-facing and application tiers |
-| Internet Gateway | Internet access for public subnets |
-| NAT Gateway and Elastic IP | Outbound internet access for private instances |
-| Application Load Balancer | Distributes HTTP traffic |
-| Target Group | Registers EC2 instances for load balancing |
-| Launch Template | Defines EC2 instance configuration |
-| Auto Scaling Group | Maintains web server capacity |
-| Security Groups | Controls traffic between the ALB and EC2 instances |
+Internet → Application Load Balancer → Target Group → EC2 Auto Scaling Group → Apache Web Servers
 
-## Prerequisites
+Networking:
 
-- An AWS account
-- AWS CLI configured with credentials and the required permissions
-- Terraform CLI 1.0 or later
-- An Amazon Linux-compatible AMI ID available in the configured region
+Custom VPC: 10.0.0.0/16
 
-## Configuration
+AWS Region: ap-south-1 (Mumbai)
 
-The default configuration is located in `infra/veriables.tf`:
+Two Availability Zones: ap-south-1a and ap-south-1b
 
-| Variable | Default | Description |
-|---|---|---|
-| `region_name` | `ap-south-1` | AWS region |
-| `ami_id` | `ami-0f535a71b34f2d44a` | AMI for EC2 instances |
-| `instance_type` | `t2.micro` | EC2 instance type |
-| `vpc_availability_zones` | `ap-south-1a`, `ap-south-1b` | Availability Zones |
+Two public and two private subnets
 
-Verify that the default AMI ID exists in `ap-south-1` and is compatible with the `yum`/`systemctl` commands in `infra/userdata.sh`. Update the variables if needed.
+Internet Gateway and NAT Gateway
 
-## Deployment
+Security Groups for ALB and EC2
 
-```bash
+AWS Services and Technologies
+
+AWS EC2
+
+Application Load Balancer
+
+EC2 Auto Scaling
+
+Amazon VPC
+
+NAT Gateway and Elastic IP
+
+AWS Security Groups
+
+Terraform
+
+Amazon Linux and Apache HTTP Server
+
+Auto Scaling Configuration
+
+Setting
+
+Value
+
+EC2 Instance Type
+
+t2.micro
+
+Minimum Capacity
+
+2
+
+Desired Capacity
+
+2
+
+Maximum Capacity
+
+3
+
+Application Port
+
+HTTP 80
+
+Deployment Steps
+
 cd infra
 terraform init
-terraform fmt
 terraform validate
 terraform plan
 terraform apply
-```
 
-After the apply completes, Terraform outputs the ALB DNS name:
+Review the Terraform plan and AWS costs before applying.
 
-```bash
+Verification Results
+
+The following checks were completed successfully:
+
+Terraform configuration initialization and validation
+
+Infrastructure deployment: 21 resources added
+
+ALB returned HTTP 200 OK
+
+Apache Web Server returned the expected welcome page
+
+Auto Scaling Group reported two instances in InService state
+
+Pending verification:
+
+Both ALB targets reporting healthy
+
+Automatic scale-out and scale-in under load
+
+Application Verification
+
+Retrieve the ALB DNS name:
+
 terraform output alb_dns_name
-```
 
-Open the value in a browser using `http://`:
+Test HTTP connectivity:
 
-```text
-http://<alb-dns-name>
-```
+curl -I http://YOUR-ALB-DNS-NAME
 
-The default page displays the private IP address of the instance that handled the request.
+Test the application:
 
-## Scaling
+curl http://YOUR-ALB-DNS-NAME
 
-The Auto Scaling Group is currently configured with:
+Expected response:
 
-- **Desired capacity:** 2 instances
-- **Minimum:** 2 instances
-- **Maximum:** 3 instances
+<h1>Welcome to SLGS TO webserver : 10.0.x.x</h1>
 
-Update `desired_capacity`, `min_size`, or `max_size` in `infra/ec2.tf` and apply the configuration again.
+Troubleshooting
 
-## Cleanup
+IAM Access Denied: Ensure the deployment identity has the required permissions for EC2, VPC, Elastic Load Balancing, and Auto Scaling.
 
-To remove all provisioned resources:
+Saved Plan Is Stale: Generate a new Terraform plan after the state changes.
 
-```bash
-cd infra
+ALB Connection Timeout: Verify public subnet routing, Internet Gateway, listener, security groups, and target health.
+
+Unhealthy EC2 Targets: Check the Apache service, user data execution, target group health checks, and network connectivity.
+
+Cleanup
+
+To avoid ongoing AWS charges, review and destroy the lab infrastructure when it is no longer required:
+
+terraform plan -destroy
 terraform destroy
-```
 
-## Repository Structure
+Warning: Destroying infrastructure permanently removes Terraform-managed resources. Back up any important data before proceeding.
 
-```text
-.
-├── README.md
-└── infra
-    ├── ec2.tf          # ALB, target group, launch template, and ASG
-    ├── provider.tf      # AWS provider configuration
-    ├── userdata.sh      # Apache installation and web page setup
-    ├── veriables.tf     # Input variables
-    └── vpc.tf           # VPC, subnets, routing, NAT, and internet gateway
-```
+Security and Cost Considerations
 
-## Security and Cost Notes
+Use least-privilege IAM permissions and temporary credentials where possible.
 
-- The ALB security group allows public HTTP traffic on port 80.
-- EC2 instances receive no public IP and must be reached through the ALB.
-- NAT Gateway, Elastic IP, ALB, and EC2 usage may incur AWS charges.
-- Destroy the resources when they are no longer needed.
+Never commit AWS credentials, Terraform state files, or saved plan files.
+
+ALB, NAT Gateway, EC2, EBS, and public IPv4 addresses may incur charges.
+
+Restrict security group rules to required ports and trusted traffic sources.
+
+Project Status
+
+Infrastructure deployment: Completed
+
+Application HTTP connectivity: Verified
